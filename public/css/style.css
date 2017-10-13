@@ -1,0 +1,15 @@
+*, *:before, *:after {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+main {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.sticker {
+    width: 35mm;
+    height: 52.5mm;
+    margin: 10mm;
+}

@@ -62,6 +62,23 @@ app.post('/xlstojson', upload.single('tablefile'), (req, res, err) => {
 
 });
 
+app.get('/stickers', (req, res, err) => {
+    if(err) console.error(err);
+    xlsx2json('./public/upload/tablefile.xlsx', {
+        dataStartingRow: 2,
+        mapping: {
+        'article': 'A',
+        'title': 'B',
+        'size': 'C',
+        'barcode': 'D'
+    }})
+    .then( (json) => {
+        res.render('stickers', {jsonSticker: json});
+    })
+    .catch( (err) => console.error(err));
+
+});
+
 app.use(express.static(__dirname + '/public'));
 
 // 404

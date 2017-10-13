@@ -1,0 +1,14 @@
+include includes/head-stickers.pug
+
+body
+    main
+        each val in jsonSticker
+            each v in val
+                div.sticker
+                    p.artice= v.article
+                    h2.title= v.title
+                    p.size= v.size
+                    svg(id= v.barcode)
+                    img(src="img/pattern.jpg")
+
+                
