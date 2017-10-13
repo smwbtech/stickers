@@ -1,24 +1,57 @@
-const express = require('express');
-const multer = require('multer');
-const fs = require('fs');
-const xlsx2json = require('xlsx2json');
+const   express = require('express'),
+        multer = require('multer'),
+        fs = require('fs'),
+        xlsx2json = require('xlsx2json'),
+        jsBarcode = require('jsbarcode'),
+        canvas = require('canvas'),
+        gm = require('gm'),
+        Image = canvas.Image;
 
-// var storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, './uploads/')
-//   },
-//   filename: function (req, file, cb) {
-//     crypto.pseudoRandomBytes(16, function (err, raw) {
-//       cb(null, raw.toString('hex') + Date.now() + '.' + mime.extension(file.mimetype));
-//     });
-//   }
-// });
+
 let upload = multer({ dest: './public/upload/' });
-
 let app = express();
 
 app.set('port', process.env.PORT || 3000);
 app.set('view engine', 'pug');
+
+
+function makingPicture(obj){
+    gm('./public/img/pattern.jpg')
+    .composite(`./public/upload/${obj.barcode}.png`)
+    .geometry('+100+460')
+    .write('./public/img/pattern-changed.jpg', function (err) {
+      if (!err) console.log('done');
+    });
+
+    gm('./public/img/pattern-changed.jpg')
+    .font('Arial.ttf', 16)
+    .drawText(300, 39, `${obj.article}`)
+    .drawText(300, 58, `${obj.size}`)
+    .drawText(12, 100, obj.title.find('женская') ? 'футболка женская' : 'футболка мужская' )
+    .drawText(12, 455, `${obj.title}`)
+    .write(`./public/upload/${obj.barcode}.jpg`, function (err) {
+      if (!err) console.log('done');
+    });
+}
+
+
+
+function makingBarcode(obj) {
+    let cnv = new canvas(350, 140);
+    let barCode = jsBarcode(cnv, `${obj.article}`, {format: 'ean13'});
+    let png = fs.createWriteStream(`./public/upload/${obj.barcode}.png`);
+    let stream = cnv.pngStream(barCode);
+
+    stream.on('data', function(chunk){
+      png.write(chunk);
+    });
+
+    stream.on('end', function(){
+    //   console.log('saved png');
+    });
+}
+
+
 
 app.get('/', (req, res, err) => {
     if(err) console.error(err);
@@ -73,7 +106,9 @@ app.get('/stickers', (req, res, err) => {
         'barcode': 'D'
     }})
     .then( (json) => {
-        res.render('stickers', {jsonSticker: json});
+
+        console.log(json[0][0]);
+
     })
     .catch( (err) => console.error(err));
 
