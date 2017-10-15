@@ -5,6 +5,7 @@ const   express = require('express'),
         jsBarcode = require('jsbarcode'),
         canvas = require('canvas'),
         gm = require('gm'),
+        im = require('gm').subClass({imageMagick: true}),
         Image = canvas.Image;
 
 
@@ -16,21 +17,44 @@ app.set('view engine', 'pug');
 
 
 function makingPicture(obj){
+    console.log(obj);
     gm('./public/img/pattern.jpg')
     .composite(`./public/upload/${obj.barcode}.png`)
-    .geometry('+100+460')
-    .write('./public/img/pattern-changed.jpg', function (err) {
-      if (!err) console.log('done');
+    .geometry('+20+460')
+    .write('./public/img/pattern-changed.jpg', (err) => {
+      if (!err) {
+          gm('/public/img/pattern-changed.jpg')
+         .font(__dirname + "LiberationMono-Bold.ttf", 16)
+          .drawText(300, 39, `${obj.article}`)
+          .drawText(300, 58, `${obj.size}`)
+          .drawText(12, 100, obj.title.match(/женская/) ? 'ФУТБОЛКА ЖЕНСКАЯ' : 'ФУТБОЛКА МУЖСКАЯ' )
+          .drawText(12, 455, `${obj.title}`)
+          .write(`./public/upload/${obj.barcode}.jpg`, (err) => {
+            if (err) {
+                console.error(err);
+            }
+            console.log('done');
+          });
+      }
     });
+}
 
-    gm('./public/img/pattern-changed.jpg')
-    .font('Arial.ttf', 16)
-    .drawText(300, 39, `${obj.article}`)
-    .drawText(300, 58, `${obj.size}`)
-    .drawText(12, 100, obj.title.find('женская') ? 'футболка женская' : 'футболка мужская' )
-    .drawText(12, 455, `${obj.title}`)
-    .write(`./public/upload/${obj.barcode}.jpg`, function (err) {
-      if (!err) console.log('done');
+
+function createSticker(obj) {
+    return new Promise( (res, rej) => {
+        let cnv = new canvas(400, 140);
+        let barCode = jsBarcode(cnv, `${obj.barcode}`, { format: "ean13", width: 3, font: 'sans-serif'});
+        let png = fs.createWriteStream(`./public/upload/${obj.barcode}.png`);
+        let stream = cnv.pngStream(barCode);
+
+        stream.on('data', (chunk) => {
+          png.write(chunk);
+        });
+
+        stream.on('end', () => {
+            // console.log(obj);
+            res(obj);
+        });
     });
 }
 
@@ -38,7 +62,7 @@ function makingPicture(obj){
 
 function makingBarcode(obj) {
     let cnv = new canvas(350, 140);
-    let barCode = jsBarcode(cnv, `${obj.article}`, {format: 'ean13'});
+    let barCode = jsBarcode(cnv, `${obj.barcode}`, { format: "ean13"});
     let png = fs.createWriteStream(`./public/upload/${obj.barcode}.png`);
     let stream = cnv.pngStream(barCode);
 
@@ -47,7 +71,7 @@ function makingBarcode(obj) {
     });
 
     stream.on('end', function(){
-    //   console.log('saved png');
+        makingPicture(obj);
     });
 }
 
@@ -107,7 +131,18 @@ app.get('/stickers', (req, res, err) => {
     }})
     .then( (json) => {
 
-        console.log(json[0][0]);
+        // console.log(json[0][0]);
+        for(let arr of json) {
+            createSticker(arr[0])
+            .then (makingPicture)
+            .catch( (err) => console.error(err));
+            for(let object of arr) {
+                // createSticker(object)
+                // .then( barcodeOnPic )
+                // .then (makingPicture)
+                // .catch( (err) => console.error(err));
+            }
+        }
 
     })
     .catch( (err) => console.error(err));
