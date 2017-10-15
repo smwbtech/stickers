@@ -15,36 +15,38 @@ let app = express();
 app.set('port', process.env.PORT || 3000);
 app.set('view engine', 'pug');
 
-
-function makingPicture(obj){
-    console.log(obj);
-    gm('./public/img/pattern.jpg')
-    .composite(`./public/upload/${obj.barcode}.png`)
-    .geometry('+20+460')
-    .write('./public/img/pattern-changed.jpg', (err) => {
-      if (!err) {
-          gm('./public/img/pattern-changed.jpg')
-         .font(__dirname + "/public/fonts/ArialRegular.ttf", 16)
-          .drawText(300, 39, `${obj.article}`)
-          .drawText(300, 58, `${obj.size}`)
-          .drawText(12, 100, obj.title.match(/женская/) ? 'ФУТБОЛКА ЖЕНСКАЯ' : 'ФУТБОЛКА МУЖСКАЯ' )
-          .font(__dirname + "/public/fonts/ArialItalic.ttf", 17)
-          .drawText(12, 455, `${obj.title}`)
-          .write(`./public/upload/${obj.barcode}.jpg`, (err) => {
-            if (err) {
-                console.error(err);
-            }
-            console.log('done');
-          });
-      }
-      else console.error(err);
+function compositeSticker(obj) {
+    return new Promise((res, rej) => {
+        console.log(1);
+        gm('./public/img/pattern.jpg')
+        .composite(`./public/upload/${obj.barcode}.png`)
+        .geometry('+20+460')
+        .write('./public/img/pattern-changed.jpg', (err) => {
+            if(err) throw err;
+            res(obj);
+        });
     });
 }
 
+function drawText(obj) {
+    console.log(1)
+    gm('./public/img/pattern-changed.jpg')
+    .font(__dirname + "/public/fonts/ArialRegular.ttf", 16)
+    .drawText(300, 39, `${obj.article}`)
+    .drawText(300, 58, `${obj.size}`)
+    .font(__dirname + "/public/fonts/ArialBold.ttf", 16)
+    .drawText(12, 100, obj.title.match(/женская/) ? 'ФУТБОЛКА ЖЕНСКАЯ' : 'ФУТБОЛКА МУЖСКАЯ' )
+    .font(__dirname + "/public/fonts/ArialItalic.ttf", 17)
+    .drawText(12, 460, `${obj.title}`)
+    .write(`./public/upload/${obj.barcode}sticker.jpg`, (err) => {
+        if(err) throw err;
+        Promise.resolve(obj);
+    });
+}
 
 function createSticker(obj) {
     return new Promise( (res, rej) => {
-        let cnv = new canvas(400, 140);
+        let cnv = new canvas(400, 130);
         let barCode = jsBarcode(cnv, `${obj.barcode}`, { format: "ean13", width: 3, font: 'sans-serif'});
         let png = fs.createWriteStream(`./public/upload/${obj.barcode}.png`);
         let stream = cnv.pngStream(barCode);
@@ -54,30 +56,11 @@ function createSticker(obj) {
         });
 
         stream.on('end', () => {
-            // console.log(obj);
-            res(obj);
+            setTimeout( ()=> res(obj), 300);
+
         });
     });
 }
-
-
-
-function makingBarcode(obj) {
-    let cnv = new canvas(350, 140);
-    let barCode = jsBarcode(cnv, `${obj.barcode}`, { format: "ean13"});
-    let png = fs.createWriteStream(`./public/upload/${obj.barcode}.png`);
-    let stream = cnv.pngStream(barCode);
-
-    stream.on('data', function(chunk){
-      png.write(chunk);
-    });
-
-    stream.on('end', function(){
-        makingPicture(obj);
-    });
-}
-
-
 
 app.get('/', (req, res, err) => {
     if(err) console.error(err);
@@ -135,15 +118,14 @@ app.get('/stickers', (req, res, err) => {
 
         // console.log(json[0][0]);
         for(let arr of json) {
-            createSticker(arr[0])
-            .then (makingPicture)
-            .catch( (err) => console.error(err));
-            for(let object of arr) {
-                // createSticker(object)
-                // .then( barcodeOnPic )
-                // .then (makingPicture)
-                // .catch( (err) => console.error(err));
-            }
+            var i = 0;
+            var intervalId = setInterval( () => {
+                createSticker(arr[i])
+                .then(compositeSticker)
+                .then((obj) => drawText(obj))
+                .catch( (err) => console.error(err));
+                i < arr.length ? i++ : clearInterval(intervalId);
+            }, 300);
         }
 
     })
@@ -170,3 +152,13 @@ app.use( (err, req, res, next) => {
 app.listen(app.get('port'), () => {
     console.log('Наш сервер работает на 3000 порту');
 });
+
+// var arr = [[1,2,3,4,5,6,7,8]];
+//
+// for (let prop of arr) {
+//     var i = 0;
+//     var intervalId = setInterval( () => {
+//         console.log(prop[i]);
+//         i < prop.length ? i++ : clearInterval(intervalId);
+//     }, 300);
+// }
