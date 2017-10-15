@@ -23,11 +23,12 @@ function makingPicture(obj){
     .geometry('+20+460')
     .write('./public/img/pattern-changed.jpg', (err) => {
       if (!err) {
-          gm('/public/img/pattern-changed.jpg')
-         .font(__dirname + "LiberationMono-Bold.ttf", 16)
+          gm('./public/img/pattern-changed.jpg')
+         .font(__dirname + "/public/fonts/ArialRegular.ttf", 16)
           .drawText(300, 39, `${obj.article}`)
           .drawText(300, 58, `${obj.size}`)
           .drawText(12, 100, obj.title.match(/женская/) ? 'ФУТБОЛКА ЖЕНСКАЯ' : 'ФУТБОЛКА МУЖСКАЯ' )
+          .font(__dirname + "/public/fonts/ArialItalic.ttf", 17)
           .drawText(12, 455, `${obj.title}`)
           .write(`./public/upload/${obj.barcode}.jpg`, (err) => {
             if (err) {
@@ -36,6 +37,7 @@ function makingPicture(obj){
             console.log('done');
           });
       }
+      else console.error(err);
     });
 }
 
