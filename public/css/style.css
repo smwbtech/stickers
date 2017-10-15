@@ -13,3 +13,11 @@ main {
     height: 52.5mm;
     margin: 10mm;
 }
+
+.inactive {
+    visibility: hidden;
+}
+
+.active {
+    visibility: visible;
+}
