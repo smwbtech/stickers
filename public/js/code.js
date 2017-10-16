@@ -25,7 +25,7 @@ window.onload = () => {
                 fetch(e.target.href, {method: 'get'})
                 .then( (res) =>{
                     if(res.status === 200) {
-                        checkReady();
+                        // Проверка готовности стикеров!
                     }
                 })
                 .catch( (err) => console.log(err));
@@ -36,27 +36,6 @@ window.onload = () => {
             console.log(err);
         });
 
-    }
-
-    // helper
-    function checkReady() {
-        console.log('start check');
-        fetch('/readystatus', {method: 'get'})
-        .then( (res) => {
-            if(res.status === 200) {
-                console.log('dsadsada');
-                foo();
-
-            }
-        })
-        .catch((err) => console.log(err));
-    }
-
-    function foo() {
-        status.classList.remove('active');
-        status.classList.add('inactive');
-        flashMessage.innerHTML = '<a download href="download/stickers.zip">Скачать стикеры</a>';
-        status.classList.remove('inactive');
     }
 
 }
